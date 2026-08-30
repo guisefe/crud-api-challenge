@@ -1,26 +1,35 @@
-const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const cors = require('cors');
 
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
+const app = require('./app');
+const connectDB = require('./config/db');
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5000);
 
-app.use(cors());
-app.use(express.json());
+function validateConfiguration() {
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI is required');
+  }
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB conectado'))
-  .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must contain at least 32 characters');
+  }
+}
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+async function start() {
+  validateConfiguration();
+  await connectDB();
+  return app.listen(PORT, () => {
+    console.log(`API listening on port ${PORT}`);
+  });
+}
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+if (require.main === module) {
+  start().catch((error) => {
+    console.error('Unable to start the API:', error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { start, validateConfiguration };

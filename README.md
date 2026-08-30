@@ -1,182 +1,80 @@
-# crud.api_nodejs# User CRUD
-This project is a user CRUD from a Back End challenge of Dataside
+# User CRUD API
 
-## Project Setup
+[![CI](https://github.com/guisefe/crud-api-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/guisefe/crud-api-challenge/actions/workflows/ci.yml)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)
 
-- *Requirements:*
-    - Node ^22.12.0
-    - MongoDB Comunity ^8.0.4
-- *Run MongoDB:*
-    - Create data directory on local of yout preference
-    - run `mongod --dbpath <path to data directory>`
-- *Install Dependences:*
-    - `npm install`
-- *Start Development Serve:*
-    - run `npm start`
-    - By default server will run on [http://localhost:5000/](http://localhost:5000/)
+An authenticated CRUD API for user registration, login and profile management. This is a
+historical backend exercise retained to document engineering growth and maintained with basic
+repository, security and CI hygiene.
 
-## Project Structure
+## What it demonstrates
 
-**| server.js**   
-**| -/config**   
-**| -/controllers**  
-**| -/db**   
-**| -/middleware**      
-**| -/routes**           
-**| -/models**   
+- a small Express application with an explicit application/startup boundary;
+- MongoDB persistence through Mongoose;
+- password hashing with bcrypt and JWT authentication;
+- allowlisted profile updates and password-safe query projections;
+- a stable health endpoint, automated smoke tests and GitHub Actions CI;
+- environment-based configuration with no committed credentials.
 
-## Routes
+It is intentionally a compact learning project, not a production identity platform. The main
+AI and data engineering portfolio projects are available on the
+[author profile](https://github.com/guisefe).
 
- **1.** **Create User:** 
-  - Method: `POST`
-  - URL: `/api/auth/register`
-  - Body: 
+## Run locally
 
-```json
+Requirements: Node.js 22+ and MongoDB.
 
-{
-  "name": "Fulano"
-  "email": "fulano@example.com"
-  "password": "senha@123"
-  "dateOfBirth": "1967-07-01"
-}
+```bash
+git clone https://github.com/guisefe/crud-api-challenge.git
+cd crud-api-challenge
+npm ci
+cp .env.example .env
+npm start
 ```
 
+Replace `JWT_SECRET` with a random value containing at least 32 characters. The API starts only
+after validating its configuration and connecting to MongoDB.
 
-**- Response example:**
+## API surface
 
+| Method | Endpoint | Authentication | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/health` | No | Liveness contract |
+| `POST` | `/api/auth/register` | No | Register a user |
+| `POST` | `/api/auth/login` | No | Obtain a JWT |
+| `GET` | `/api/users/list` | Bearer JWT | List and filter users |
+| `GET` | `/api/users/:id` | Bearer JWT | Retrieve one user |
+| `PATCH` | `/api/users/:id` | Bearer JWT | Update allowlisted fields |
+| `DELETE` | `/api/users/:id` | Bearer JWT | Delete one user |
 
-```json
+Protected requests use the standard header:
 
-{
-    "message": "Usuário registrado com sucesso!"
-}
-```
-**2.** **User Login**
-  -  Method: `POST`
-  -  URL: `/api/auth/login`
-  -  Body: 
-
-
-```json
-
-{
-   "email":"fulano@example.com",
-    "password": "senha@123"
-}
-
+```text
+Authorization: Bearer <token>
 ```
 
-**- Response example:**
+List queries support `name`, `email`, `dateOfBirth` and comma-separated `sort` fields. Prefix a
+sort field with `-` for descending order, for example `sort=name,-dateOfBirth`.
 
-```json
+## Quality checks
 
-
-{
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NTc2MjE3MmJmODA0ZThiOWM3MjQ4YyIsImlhdCI6MTczMzc4NTEzOCwiZXhwIjoxNzMzODcxNTM4fQ.x7cxlFOsmjuugQjDdneFObwzpXAxe7tGA4Z6YuVUpJY",
-    "user": {
-        "_id": "675762172bf804e8b9c7248c",
-        "name": "fulano",
-        "email": "fulano@example.com",
-        "dateOfBirth": "1967-07-01",
- }
-}
+```bash
+npm run check
+npm test
 ```
 
+CI installs the lockfile dependencies, checks JavaScript syntax and runs the Node.js test suite.
 
-  -**NOTES**:  
-    -The response includes a *JWT token* for use on protected endpoints.  
-	-Use the token in protected requests by passing the header as ``Authorization: <token>.``
- 
+## Security scope
 
-**3.** **List Users:**
-  - Method: `GET`
-  - URL: `/api/users/list`
-  - Protected: `TRUE`
-  - Query Params:
- 
- ``` json
-  {
-    "name": "fulano",
-    "email": "fulano@example.com",
-    "dateOfBirth": "1967-07-01",
-    "sort": ["name", "-dateOfBirth"]
- }
-```
-  
-**- Response example:**
-  
-```json
-[
- {  
-     "_id": "675762172bf804e8b9c7248c",
-        "name": "fulano",
-        "email": "fulano@example.com",
-        "dateOfBirth": "1967-07-01",
-},
-{
-      "_id": "675762172df404a8b9c257D",
-        "name": "fulano2",
-        "email": "fulano2@example.com",
-        "dateOfBirth": "1967-07-01",       
-}
-]
-```
-	
+- `.env` files and installed dependencies are ignored;
+- passwords are excluded from queries by default;
+- login failures use a uniform response to reduce account enumeration;
+- profile updates accept only `name`, `email` and `dateOfBirth`;
+- invalid or expired credentials return HTTP 401.
 
-**4.** **Search user by ID:** 
-   - Method: `GET`
-   - URL: `/api/users/:ID`
-   - Protected: `TRUE`
-   - Replace: `:id` by the user ID.
-   - Body: 
-
-```json
-
-{ 
-    "_id": "675762172bf804e8b9c7248c",
-    "name": "fulano",
-    "email": "fulano@example.com",
-    "dateOfBirth": "1967-07-01",
-}
-```
-**5.** **Partial User Update**
- - Method: `PATCH`
- - URL: `/api/users/:id`
- - Protected: `TRUE`
- - Replace: `:id` by user ID.
- - Body: 
-
-```json
-
-{
-  "email": "newemail@example.com"
-}
- ```
-**- Response example:**
-
-```json
-
-{
-"_id": "675762172bf804e8b9c7248c",
-    "name": "fulano",
-    "email": "newemail@example.com",
-    "dateOfBirth": "1967-07-01",
-}
-```
-**6.** **Delete User**
-  - Method:`DELETE`
-  - URL: `/api/users/:id`
-  - Protected: `TRUE`
-  - Replace: `:id` by user ID.
- 
-**- Response example:**
-```json
-
-{
-"usuário deletado"
-}
-
-```
-
-
+A production identity service would additionally require request validation middleware, rate
+limiting, refresh-token rotation, password recovery, email verification, audit logging, secrets
+management, observability and a dedicated authorization policy.
